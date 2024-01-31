@@ -1,53 +1,74 @@
--- Find employees whose salary is above the average salary
-SELECT *
-FROM Employees
-WHERE Salary > (SELECT AVG(Salary) FROM Employees);
+-- Create a table for products
+CREATE TABLE Products (
+    ProductID INT PRIMARY KEY,
+    ProductName VARCHAR(100),
+    Price DECIMAL(10, 2),
+    StockQuantity INT
+);
 
--- Retrieve information about employees and their departments using INNER JOIN
-SELECT Employees.EmployeeID, Employees.FirstName, Employees.LastName, Employees.Salary, Departments.DepartmentName
-FROM Employees
-INNER JOIN Departments ON Employees.DepartmentID = Departments.DepartmentID;
+-- Create a table for customers
+CREATE TABLE Customers (
+    CustomerID INT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Email VARCHAR(100)
+);
 
+-- Create a table for orders
+CREATE TABLE Orders (
+    OrderID INT PRIMARY KEY,
+    CustomerID INT,
+    OrderDate DATE,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
 
--- Calculate the total salary expenditure for each department
-SELECT Departments.DepartmentName, SUM(Employees.Salary) AS TotalSalary
-FROM Employees
-INNER JOIN Departments ON Employees.DepartmentID = Departments.DepartmentID
-GROUP BY Departments.DepartmentName;
+-- Create a table for order details
+CREATE TABLE OrderDetails (
+    OrderDetailID INT PRIMARY KEY,
+    OrderID INT,
+    ProductID INT,
+    Quantity INT,
+    TotalPrice DECIMAL(10, 2),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
 
+-- Insert sample products
+INSERT INTO Products (ProductID, ProductName, Price, StockQuantity)
+VALUES
+    (1, 'Milk', 2.5, 100),
+    (2, 'Bread', 1.0, 150),
+    (3, 'Eggs', 1.8, 200);
 
--- Rank employees based on their salary within each department
-SELECT EmployeeID, FirstName, LastName, Department, Salary,
-       RANK() OVER (PARTITION BY Department ORDER BY Salary DESC) AS SalaryRank
-FROM Employees;
+-- Insert sample customers
+INSERT INTO Customers (CustomerID, FirstName, LastName, Email)
+VALUES
+    (1, 'John', 'Doe', 'john.doe@example.com'),
+    (2, 'Jane', 'Smith', 'jane.smith@example.com');
 
+-- Insert sample orders
+INSERT INTO Orders (OrderID, CustomerID, OrderDate)
+VALUES
+    (1, 1, '2024-01-31'),
+    (2, 2, '2024-01-30');
 
--- Use a CTE to find employees with salaries above the average
-WITH AvgSalaryCTE AS (
-    SELECT AVG(Salary) AS AvgSalary
-    FROM Employees
-)
-SELECT EmployeeID, FirstName, LastName, Salary
-FROM Employees
-WHERE Salary > (SELECT AvgSalary FROM AvgSalaryCTE);
+-- Insert sample order details
+INSERT INTO OrderDetails (OrderDetailID, OrderID, ProductID, Quantity, TotalPrice)
+VALUES
+    (1, 1, 1, 3, 7.5),
+    (2, 1, 2, 2, 2.0),
+    (3, 2, 3, 1, 1.8);
 
+-- Query: Get all products
+SELECT * FROM Products;
 
--- Create an index on the DepartmentID column for better performance
-CREATE INDEX idx_DepartmentID ON Employees (DepartmentID);
+-- Query: Get all customers
+SELECT * FROM Customers;
 
+-- Query: Get all orders
+SELECT * FROM Orders;
 
--- Create a stored procedure to update an employee's salary
-DELIMITER //
-CREATE PROCEDURE UpdateSalary(IN empID INT, IN newSalary DECIMAL(10, 2))
-BEGIN
-    UPDATE Employees SET Salary = newSalary WHERE EmployeeID = empID;
-END //
-DELIMITER ;
-
-
--- Create a trigger to log salary changes to an audit table
-CREATE TRIGGER SalaryAudit
-AFTER UPDATE ON Employees
-FOR EACH ROW
-INSERT INTO SalaryAuditLog (EmployeeID, OldSalary, NewSalary, ChangeDate)
-VALUES (OLD.EmployeeID, OLD.Salary, NEW.Salary, NOW());
+-- Query: Get order details with product information
+SELECT OrderDetails.OrderID, Products.ProductName, OrderDetails.Quantity, OrderDetails.TotalPrice
+FROM OrderDetails
+JOIN Products ON OrderDetails.ProductID = Products.ProductID;
